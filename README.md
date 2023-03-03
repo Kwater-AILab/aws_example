@@ -1,4 +1,26 @@
-# aws_example
+# AWS를 활용한 K-water AI-Lab Solution의 공유 및 활용
+
+### 목적:
+
+AWS를 활용하여 개발된 AI Solutions의 효율적 공유 및 활용 Platforms 제공
+
+### 접근방법:
+Approach-1. 개발된 Jupyter notebooks를 활용한 AI Solutions 실행
+Approach-2. Streamlit를 활용한 Web-App기반 AI Solution 실행
+
+### 고려사항:
+1. 웹과 같이 지속적인 운영보다는 개발된 AI Solutions을 일시적 또는 일정기간 경험하며 실제 업무나 연구에 적용해 볼 수 있는 경험을 제공하는 것을 목적으로
+   하기때문에 반드시 AWS의 활용은 시간비용으로 운영될 수 있도록 해야함
+2. 
+
+
+
+### AWS 시작:
+
+[![Launch SageMaker Notebook with CloudFormation](kwater_ailab.jfif)](https://console.aws.amazon.com/cloudformation/home?region=ap-northeast-2#/stacks/new?stackName=sagemaker-notebook&templateURL=https://kwaterailab1.s3.ap-northeast-2.amazonaws.com/kwater_ailab1.yaml) |
+**Seoul** (ap-northeast-2) 
+
+
 
 Amazon SageMaker Notebook
 ====================================================
