@@ -1,0 +1,457 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  ML Pipeline Lab 3 - Using Amazon SageMaker Notebook instance to train models
+  with preprocessed data.
+Parameters:
+  VPCCIDR:
+    Description: CIDR Block for VPC (Do Not Edit)
+    Type: String
+    AllowedPattern: 10.25.0.0/16
+    Default: 10.25.0.0/16
+  SageMakerSUBNET:
+    Description: Public Subnet A (Do Not Edit)
+    Type: String
+    AllowedPattern: 10.25.2.0/24
+    Default: 10.25.2.0/24
+  NotebookInstanceType:
+    Description: Instance type for Notebook instance.
+    Type: String
+    Default: ml.m4.xlarge
+    AllowedValues:
+      - ml.m4.xlarge
+    ConstraintDescription: Must be a valid notebook instance.
+  S3PathPrefixProject:
+    Type: String
+    Description: The path prefix where project notebooks are stored
+    Default: courses/ILT-TF-200-MLDWTS/v1.1.14.prod-cee34d2c/lab-1
+  S3ResourceBucket:
+    Type: String
+    Description: S3 Bucket of were to pull lab resources from
+    Default: '-tcprod'
+Resources:
+  VPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: !Ref VPCCIDR
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: ML Pipeline - VPC
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: d1b6cd63-2a7f-435f-b0c7-d66a8fd8203c
+  SageMakerSubnet:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref SageMakerSUBNET
+      AvailabilityZone: !Select 
+        - '0'
+        - !GetAZs ''
+      Tags:
+        - Key: Name
+          Value: ML Pipeline - Private Subnet
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: dc68374e-8c3e-403f-99a8-aaae8642ef3b
+  NetworkAcl:
+    Type: 'AWS::EC2::NetworkAcl'
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: ML_Pipeline-NACL
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 83077457-d184-432e-a791-83084fe583a2
+  NetworkAclIngressEntry:
+    Type: 'AWS::EC2::NetworkAclEntry'
+    Properties:
+      NetworkAclId: !Ref NetworkAcl
+      RuleNumber: 100
+      Protocol: -1
+      RuleAction: allow
+      Egress: false
+      CidrBlock: 0.0.0.0/0
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 77ff6336-65a3-4e65-85ce-47bc98161494
+  NetworkAclEgressEntry:
+    Type: 'AWS::EC2::NetworkAclEntry'
+    Properties:
+      NetworkAclId: !Ref NetworkAcl
+      RuleNumber: 100
+      Protocol: -1
+      RuleAction: allow
+      Egress: true
+      CidrBlock: 0.0.0.0/0
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 00a8cd1e-4e87-4c5d-bf93-03fbf65acd36
+  SageMakerAclAssociation:
+    Type: 'AWS::EC2::SubnetNetworkAclAssociation'
+    Properties:
+      SubnetId: !Ref SageMakerSubnet
+      NetworkAclId: !Ref NetworkAcl
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 405141bf-81ad-466c-8231-de67c28fa792
+  SageMakerRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: SageMaker Route Table
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 551e8587-2f0e-4be2-a361-5036baa1e8c9
+  SageMakerRouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref SageMakerSubnet
+      RouteTableId: !Ref SageMakerRouteTable
+  SageMakerSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Allow access to Sagemaker
+      GroupName: SageMaker-SG
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: ML Pipeline - SageMakerSecurityGroup
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 6548bb5c-37f4-4b1f-aa65-bf86c7fdd782
+  NotebookInstanceLifeCycleConfig:
+    Type: 'AWS::SageMaker::NotebookInstanceLifecycleConfig'
+    Properties:
+      NotebookInstanceLifecycleConfigName: ml-pipeline
+      OnStart:
+        - Content:
+            'Fn::Base64': !Sub >
+              #!/bin/bash
+
+
+              sudo -u ec2-user -i <<'EOF'
+
+              # Folders to host solution files and project files
+
+              mkdir -pv /home/ec2-user/solution
+
+              mkdir -pv /home/ec2-user/SageMaker/project
+
+              mkdir -pv /home/ec2-user/SageMaker/solutions
+
+
+              # Copying files from S3 bucket.
+
+              aws s3 cp
+              s3://${AWS::Region}${S3ResourceBucket}/${S3PathPrefixProject}/scripts/
+              /home/ec2-user/SageMaker/project/ --recursive --exclude "*"
+              --include "*Student*.ipynb"
+
+              aws s3 cp
+              s3://${AWS::Region}${S3ResourceBucket}/${S3PathPrefixProject}/scripts/
+              /home/ec2-user/solution/ --recursive --exclude "*" --include
+              "*Solution*.ipynb"  --include "notebook_splitter.py"
+
+              aws s3 cp
+              s3://${AWS::Region}${S3ResourceBucket}/${S3PathPrefixProject}/scripts/
+              /home/ec2-user/SageMaker/solutions/ --recursive --exclude "*"
+              --include "Lab1*.ipynb" --include "PE-datapreprocesing*.ipynb"
+              --include "PE-training*.ipynb"
+
+              aws s3 cp
+              s3://${AWS::Region}${S3ResourceBucket}/${S3PathPrefixProject}/scripts/
+              /home/ec2-user/SageMaker/ --recursive --exclude "*" --include
+              "PE-training*.ipynb" --include "PythonCheatSheet*.ipynb"
+
+              aws s3 cp
+              s3://${AWS::Region}${S3ResourceBucket}/${S3PathPrefixProject}/scripts/
+              /home/ec2-user/SageMaker/ --recursive --exclude "*" --include
+              "*.csv"
+
+
+              # Changing ownership of the folders and contents.
+
+              chown -Rv ec2-user:ec2-user /home/ec2-user/SageMaker
+
+              chown -Rv ec2-user:ec2-user /home/ec2-user/solution
+
+
+              # Splitting the notebook
+
+              chmod +x /home/ec2-user/solution/notebook_splitter.py
+
+              cd /home/ec2-user/solution/
+
+              for notebook in Flight_Delay-Solution*.ipynb
+
+              do
+                python notebook_splitter.py ${!notebook//.ipynb/} day3
+              done
+
+              for notebook in Credit_Card_Fraud_Detection-Solution*.ipynb
+
+              do
+                python notebook_splitter.py ${!notebook//.ipynb/} day3
+              done
+
+              for notebook in Amazon_Reviews-Solution*.ipynb
+
+              do
+                python notebook_splitter.py ${!notebook//.ipynb/} day3
+              done
+
+
+              # Moving solution files to project folder and renaming them
+
+              cp -v /home/ec2-user/solution/Flight_Delay-Solution*_2.ipynb
+              /home/ec2-user/SageMaker/solutions/
+
+              cp -v
+              /home/ec2-user/solution/Credit_Card_Fraud_Detection-Solution*_2.ipynb
+              /home/ec2-user/SageMaker/solutions/
+
+              cp -v /home/ec2-user/solution/Amazon_Reviews-Solution*_2.ipynb
+              /home/ec2-user/SageMaker/solutions/
+
+              rename --verbose _2.ipynb '.ipynb'
+              /home/ec2-user/SageMaker/solutions/*.ipynb
+
+
+              # Changing ownership of the files
+
+              chown -Rv ec2-user:ec2-user /home/ec2-user/SageMaker/solutions/
+
+              chown -Rv ec2-user:ec2-user /home/ec2-user/SageMaker/project/
+
+
+              # Removing split files
+
+              rm -rfv /home/ec2-user/solution/*-Solution*.ipynb
+
+
+              # Removing output from the notebooks
+
+              for notebook in /home/ec2-user/SageMaker/PE-training*.ipynb
+
+              do
+                jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace ${!notebook}
+              done
+
+              EOF
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: bffbef9b-a748-4082-9136-a703da4bf0ef
+  SageMakerNotebookInstanceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - sagemaker.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: sagemaker-instance
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: limitInstanceSize
+                Effect: Allow
+                Action:
+                  - 'sagemaker:CreateEndpointConfig'
+                  - 'sagemaker:CreateTrainingJob'
+                  - 'sagemaker:CreateHyperParameterTuningJob'
+                  - 'sagemaker:CreateTransformJob'
+                Resource: '*'
+                Condition:
+                  'ForAnyValue:StringEquals':
+                    'sagemaker:InstanceTypes':
+                      - ml.m4.xlarge
+                      - ml.m4.xlarge
+                      - ml.m4.xlarge
+              - Sid: additionalPolicy
+                Effect: Allow
+                Action:
+                  - 'cloudwatch:*'
+                  - 'elasticfilesystem:DescribeMountTargets'
+                  - 'elasticfilesystem:DescribeFileSystems'
+                  - 'fsx:DescribeFileSystems'
+                  - 'iam:PassRole'
+                  - 'iam:GetRole'
+                  - 'kms:DescribeKey'
+                  - 'kms:ListAliases'
+                  - 'logs:*'
+                  - 's3:CreateBucket'
+                  - 's3:DeleteObject'
+                  - 's3:GetObject'
+                  - 's3:ListBucket'
+                  - 's3:PutObject'
+                  - 'sagemaker:AddTags'
+                  - 'sagemaker:CreateModel'
+                  - 'sagemaker:CreateEndpoint'
+                  - 'sagemaker:CreateModelPackage'
+                  - 'sagemaker:CreatePresignedNotebookInstanceUrl'
+                  - 'sagemaker:Describe*'
+                  - 'sagemaker:Delete*'
+                  - 'sagemaker:GetSearchSuggestions'
+                  - 'sagemaker:InvokeEndpoint'
+                  - 'sagemaker:List*'
+                  - 'sagemaker:RenderUiTemplate'
+                  - 'sagemaker:Search'
+                  - 'sagemaker:Stop*'
+                  - 'sagemaker:StartNotebookInstance'
+                Resource: '*'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 505939d9-0b75-4d5d-9620-d717e055dacb
+  SageMakerNotebookInstance:
+    Type: 'AWS::SageMaker::NotebookInstance'
+    Properties:
+      NotebookInstanceName: mlp-Lab3
+      InstanceType: !Ref NotebookInstanceType
+      LifecycleConfigName: !GetAtt 
+        - NotebookInstanceLifeCycleConfig
+        - NotebookInstanceLifecycleConfigName
+      RootAccess: Disabled
+      SubnetId: !Ref SageMakerSubnet
+      VolumeSizeInGB: 20
+      SecurityGroupIds:
+        - !Ref SageMakerSecurityGroup
+      RoleArn: !GetAtt 
+        - SageMakerNotebookInstanceRole
+        - Arn
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 03f77e89-8ea6-4f7f-82c4-a62cbcdc971a
+  LabBucket:
+    Type: 'AWS::S3::Bucket'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 8bffacb0-2688-4efc-bdc8-0667eecffce5
+Outputs:
+  SageMakerRoleArn:
+    Value: !GetAtt SageMakerNotebookInstanceRole.Arn
+  LabBucketName:
+    Value: !Ref LabBucket
+  Region:
+    Value: !Ref 'AWS::Region'
+    Description: Lab Region
+Metadata:
+  'AWS::CloudFormation::Designer':
+    8bffacb0-2688-4efc-bdc8-0667eecffce5:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 570
+        'y': 90
+      z: 1
+      embeds: []
+    505939d9-0b75-4d5d-9620-d717e055dacb:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 570
+        'y': 210
+      z: 1
+      embeds: []
+    bffbef9b-a748-4082-9136-a703da4bf0ef:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 570
+        'y': 330
+      z: 1
+      embeds: []
+    d1b6cd63-2a7f-435f-b0c7-d66a8fd8203c:
+      size:
+        width: 240
+        height: 240
+      position:
+        x: 60
+        'y': 90
+      z: 1
+      embeds:
+        - 6548bb5c-37f4-4b1f-aa65-bf86c7fdd782
+    6548bb5c-37f4-4b1f-aa65-bf86c7fdd782:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 90
+        'y': 150
+      z: 2
+      parent: d1b6cd63-2a7f-435f-b0c7-d66a8fd8203c
+      embeds: []
+      iscontainedinside:
+        - d1b6cd63-2a7f-435f-b0c7-d66a8fd8203c
+    551e8587-2f0e-4be2-a361-5036baa1e8c9:
+      size:
+        width: 150
+        height: 150
+      position:
+        x: 60
+        'y': 390
+      z: 1
+      embeds: []
+    83077457-d184-432e-a791-83084fe583a2:
+      size:
+        width: 150
+        height: 150
+      position:
+        x: 360
+        'y': 300
+      z: 1
+      embeds: []
+    00a8cd1e-4e87-4c5d-bf93-03fbf65acd36:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 570
+        'y': 450
+      z: 1
+      embeds: []
+    77ff6336-65a3-4e65-85ce-47bc98161494:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 270
+        'y': 510
+      z: 1
+      embeds: []
+    dc68374e-8c3e-403f-99a8-aaae8642ef3b:
+      size:
+        width: 150
+        height: 150
+      position:
+        x: 360
+        'y': 90
+      z: 1
+      embeds: []
+    03f77e89-8ea6-4f7f-82c4-a62cbcdc971a:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 390
+        'y': 510
+      z: 1
+      embeds: []
+    405141bf-81ad-466c-8231-de67c28fa792:
+      source:
+        id: 83077457-d184-432e-a791-83084fe583a2
+      target:
+        id: dc68374e-8c3e-403f-99a8-aaae8642ef3b
