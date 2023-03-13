@@ -47,7 +47,7 @@
 [![Launch SageMaker Notebook with CloudFormation](kwater_ailab.png)](https://console.aws.amazon.com/cloudformation/home?region=ap-northeast-2#/stacks/new?stackName=sagemaker-notebook&templateURL=https://kwaterailab1.s3.ap-northeast-2.amazonaws.com/kwater_ailab1.yaml) |
 **Seoul** (ap-northeast-2) 
 
-[![Launch SageMaker Notebook with CloudFormation](kwater_ailab.png)](https://console.aws.amazon.com/cloudformation/home?region=ap-northeast-2#/stacks/new?stackName=sagemaker-notebook&templateURL=https://kwaterailab1.s3.ap-northeast-2.amazonaws.com/workshop.yaml) |
+[![Launch SageMaker Notebook with CloudFormation](kwater_ailab.png)](https://console.aws.amazon.com/cloudformation/home?region=ap-northeast-2#/stacks/new?stackName=workshop-notebook&templateURL=https://kwaterailab1.s3.ap-northeast-2.amazonaws.com/workshop.yaml) |
 **Seoul** (ap-northeast-2) 
 
 
