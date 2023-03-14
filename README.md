@@ -44,12 +44,6 @@
 
 #### 3. AWS 시작: K-water AI-Lab 아이콘을 클릭하세요
 
-[![Launch SageMaker Notebook with CloudFormation](kwater_ailab.png)](https://console.aws.amazon.com/cloudformation/home?region=ap-northeast-2#/stacks/new?stackName=sagemaker-notebook&templateURL=https://kwaterailab1.s3.ap-northeast-2.amazonaws.com/kwater_ailab1.yaml) |
-**Seoul** (ap-northeast-2) 
-
-[![Launch SageMaker Notebook with CloudFormation](kwater_ailab.png)](https://console.aws.amazon.com/cloudformation/home?region=ap-northeast-2#/stacks/new?stackName=workshop-notebook&templateURL=https://kwaterailab1.s3.ap-northeast-2.amazonaws.com/workshop.yaml) |
-**Seoul** (Click Kwater-AILab ICON to start Jupyter notebook for Workshop) 
-
 [![Launch SageMaker Notebook with CloudFormation](kwater_ailab.png)](https://console.aws.amazon.com/cloudformation/home?region=ap-northeast-2#/stacks/new?stackName=workshop-notebook&templateURL=https://kwaterailab1.s3.ap-northeast-2.amazonaws.com/2023_ai_workshop.yaml) |
 **Seoul** (Click Kwater-AILab ICON to start Jupyter notebook for Workshop) 
 
