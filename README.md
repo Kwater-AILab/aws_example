@@ -50,5 +50,7 @@
 [![Launch SageMaker Notebook with CloudFormation](kwater_ailab.png)](https://console.aws.amazon.com/cloudformation/home?region=ap-northeast-2#/stacks/new?stackName=workshop-notebook&templateURL=https://kwaterailab1.s3.ap-northeast-2.amazonaws.com/workshop.yaml) |
 **Seoul** (Click Kwater-AILab ICON to start Jupyter notebook for Workshop) 
 
+[![Launch SageMaker Notebook with CloudFormation](kwater_ailab.png)](https://console.aws.amazon.com/cloudformation/home?region=ap-northeast-2#/stacks/new?stackName=workshop-notebook&templateURL=https://kwaterailab1.s3.ap-northeast-2.amazonaws.com/2023_ai_workshop.yaml) |
+**Seoul** (Click Kwater-AILab ICON to start Jupyter notebook for Workshop) 
 
 #### 4. Workshop등 AWS이용 후 AWS이용 추가요금 방지를 위한 확인사항
